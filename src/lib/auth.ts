@@ -47,7 +47,9 @@ export async function requireAdmin(opts: { manage?: boolean; mutating?: boolean 
   if (opts.mutating) {
     const h = await headers();
     const origin = h.get("origin");
-    if (origin && new URL(origin).host !== h.get("host")) throw new ApiError(403, "Cross-origin request blocked");
+    // Behind Railway's proxy the public host may arrive as x-forwarded-host.
+    const hosts = [h.get("x-forwarded-host"), h.get("host")].filter(Boolean);
+    if (origin && !hosts.includes(new URL(origin).host)) throw new ApiError(403, "Cross-origin request blocked");
   }
   if (opts.manage && s.role === "barber") throw new ApiError(403, "Not authorized");
   return s;
